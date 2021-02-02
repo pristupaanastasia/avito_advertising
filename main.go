@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 	"net/url"
 
@@ -25,16 +26,36 @@ type Advertisement struct {
 
 var database *sql.DB
 
+func ErrorHandler(w http.ResponseWriter, err interface{}, code int) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(err)
+}
+
 func CreateHandler(w http.ResponseWriter, r *http.Request) {
+	var id int
 	r.ParseForm()
 	price := r.FormValue("price")
 	name := r.FormValue("name")
 	desc := r.FormValue("description")
-	image := r.FormValue("image")
-	fmt.Println("price ", price, "name ", name, "desc ", desc, "image  ", image)
-	u, _ := url.Parse(image)
-	u.RawQuery, u.Fragment = "", ""
-	fmt.Printf("%s\n", u)
+	body, _ := url.Parse(r.RequestURI)
+	v, _ := url.ParseQuery(body.RawQuery)
+	fmt.Println(price)
+	update := time.Now().Format("2006-01-02")
+	err := database.QueryRow("insert into advertisement (price, name, description, image, update ) values ($1, $2, $3, $4, $5) returning id",
+		price, name, desc, pq.Array(v["image"]), update).Scan(&id)
+	if err != nil {
+		ErrorHandler(w, err, 400)
+		//panic(400)
+		return
+	}
+	json_return := map[string]int{"id": id}
+	json_data, errno := json.Marshal(json_return)
+	if errno != nil {
+		ErrorHandler(w, errno, 400)
+		return
+	}
+	w.Write(json_data)
 }
 func FindHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
@@ -74,14 +95,14 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	defer ad.Close()
 	json_data, errno := json.Marshal(list)
 	if errno != nil {
-		panic(400)
+		ErrorHandler(w, errno, 400)
 		return
 	}
 	w.Write(json_data)
 }
 
 func main() {
-	connStr := "user=postgres password= dbname=avito_db sslmode=disable"
+	connStr := "user=postgres dbname=avito_db sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		panic(err)
