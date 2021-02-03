@@ -72,53 +72,13 @@ func Valid(name string, desc string, image []string, w http.ResponseWriter) bool
 	return false
 }
 
-func CreateHandler(w http.ResponseWriter, r *http.Request) {
-	var id int
-	r.ParseForm()
-	price := r.FormValue("price")
-	name := r.FormValue("name")
-	desc := r.FormValue("description")
-	image := r.Form["image"]
-	if Valid(name, desc, image, w) {
-		return
-	}
-	update := time.Now() //.Format("2006-01-02")
-	err := database.QueryRow("insert into advertisement (price, name, description, image, update ) values ($1, $2, $3, $4, $5) returning id",
-		price, name, desc, pq.Array(image), update).Scan(&id)
-	if err != nil {
-		ErrorHandler(w, err, 400)
-		return
-	}
-	json_return := map[string]int{"id": id, "status": 200}
-	json_data, errno := json.Marshal(json_return)
-	if errno != nil {
-		ErrorHandler(w, errno, 400)
-		return
-	}
-	w.Write(json_data)
-}
-
-func FindHandler(w http.ResponseWriter, r *http.Request) {
-	id := r.FormValue("id")
-	ad := database.QueryRow("select * from advertisement where id = $1", id)
-	adv := Advertisement{}
-	err := ad.Scan(&adv.Id, &adv.Price, &adv.Name, &adv.Description, pq.Array(&adv.Image), &adv.Update)
-	if err != nil {
-		ErrorHandler(w, err, 400)
-		return
-	}
-	SpaceTriming(&adv)
-	if _, ok := r.Form["fields"]; !ok {
-		adv.Description = ""
-		buf := adv.Image[0] //переменная buf введена, что бы не было коллизии данных в памяти
-		adv.Image = []string{buf}
-	}
-	json_data, errno := json.Marshal(adv)
-	if errno != nil {
-		ErrorHandler(w, errno, 400)
-		return
-	}
-	w.Write(json_data)
+func CopyAdv(l *Advertisement, adv *Advertisement_js) {
+	(*adv).Name = (*l).Name
+	(*adv).Id = (*l).Id
+	(*adv).Price = (*l).Price
+	(*adv).Description = (*l).Description
+	(*adv).Image = (*l).Image
+	(*adv).Update = (*l).Update.Format("2006-01-02")
 }
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -135,12 +95,13 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	ad, err := database.Query("select * from advertisement order by "+sort+
 		" limit 10 offset ($1* 10 -10) ", page) //думаю выборка сразу в бд самая оптимальная
 	if err != nil {
-		panic(400)
+		ErrorHandler(w, err, 400)
 		return
 	}
-	list := []Advertisement{}
+	list := []Advertisement_js{}
 	for ad.Next() {
 		l := Advertisement{}
+		adv := Advertisement_js{}
 		err := ad.Scan(&l.Id, &l.Price, &l.Name, &l.Description, pq.Array(&l.Image), &l.Update)
 		if err != nil {
 			panic(400)
@@ -150,7 +111,8 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		l.Description = ""
 		buf := l.Image[0] //переменная buf введена, что бы не было коллизии данных в памяти
 		l.Image = []string{buf}
-		list = append(list, l)
+		CopyAdv(&l, &adv)
+		list = append(list, adv)
 	}
 	defer ad.Close()
 	json_data, errno := json.Marshal(list)
