@@ -124,7 +124,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	connStr := "user=postgres dbname=avito_db sslmode=disable"
+	connStr := "host=db port=5432 user=postgres password=1805 dbname=avito_db sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		panic(err)

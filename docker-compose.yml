@@ -1,0 +1,30 @@
+
+version: "3.6"
+
+services:
+  web:
+    build: .
+    restart: always
+    volumes:
+      - ./:/go/src/app
+    ports:
+      - 9000:9000
+    networks:
+      - custom
+    depends_on:
+      - db
+  db:
+    image: postgres:latest
+    networks:
+      - custom
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=1805
+      - POSTGRES_DB=avito_db
+    ports:
+      - 5432:5432
+    volumes:
+      - ./postgres-data/postgres:/var/lib/postgresql/data
+
+networks:
+  custom:
