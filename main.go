@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"github.com/lib/pq"
 
 	"strings"
@@ -22,6 +22,21 @@ type Advertisement struct {
 	Update      time.Time `json:"update"`
 }
 
+type Advertisement_js struct {
+	Id          int      `json:"id"`
+	Price       int      `json:"price"`
+	Name        string   `json:"name"`
+	Description string   `json:"description,omitempty"`
+	Image       []string `json:"image"`
+	Update      string   `json:"update"`
+}
+
+type Erstruct struct {
+	Err  error
+	Code int
+	Name string
+}
+
 var database *sql.DB
 
 func SpaceTriming(adv *Advertisement) {
@@ -38,6 +53,25 @@ func ErrorHandler(w http.ResponseWriter, err interface{}, code int) {
 	json.NewEncoder(w).Encode(err)
 }
 
+func Valid(name string, desc string, image []string, w http.ResponseWriter) bool {
+	if len(image) > 3 {
+		erro := Erstruct{errors.New("error upload"), 400, "Количество ссылок не должно превышать 3"}
+		ErrorHandler(w, erro, 400)
+		return true
+	}
+	if len(desc) > 1000 {
+		erro := Erstruct{errors.New("error upload"), 400, "Описание должно быть не больше 1000 символов"}
+		ErrorHandler(w, erro, 400)
+		return true
+	}
+	if len(name) > 200 {
+		erro := Erstruct{errors.New("error upload"), 400, "Название не должно быть больше 200 символов"}
+		ErrorHandler(w, erro, 400)
+		return true
+	}
+	return false
+}
+
 func CreateHandler(w http.ResponseWriter, r *http.Request) {
 	var id int
 	r.ParseForm()
@@ -45,6 +79,9 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 	name := r.FormValue("name")
 	desc := r.FormValue("description")
 	image := r.Form["image"]
+	if Valid(name, desc, image, w) {
+		return
+	}
 	update := time.Now() //.Format("2006-01-02")
 	err := database.QueryRow("insert into advertisement (price, name, description, image, update ) values ($1, $2, $3, $4, $5) returning id",
 		price, name, desc, pq.Array(image), update).Scan(&id)
@@ -60,10 +97,9 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Write(json_data)
 }
+
 func FindHandler(w http.ResponseWriter, r *http.Request) {
-	//r.ParseForm()
 	id := r.FormValue("id")
-	//fields := r.FormValue("fields")
 	ad := database.QueryRow("select * from advertisement where id = $1", id)
 	adv := Advertisement{}
 	err := ad.Scan(&adv.Id, &adv.Price, &adv.Name, &adv.Description, pq.Array(&adv.Image), &adv.Update)
@@ -72,7 +108,6 @@ func FindHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	SpaceTriming(&adv)
-	fmt.Println("|", r.Form)
 	if _, ok := r.Form["fields"]; !ok {
 		adv.Description = ""
 		buf := adv.Image[0] //переменная buf введена, что бы не было коллизии данных в памяти
@@ -85,6 +120,7 @@ func FindHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Write(json_data)
 }
+
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	page := r.FormValue("page")
 	sort := "update"
@@ -97,7 +133,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		sort = "update desc"
 	}
 	ad, err := database.Query("select * from advertisement order by "+sort+
-		" limit 10 offset ($1* 10 -10) ", page) //думаю такая выборка самая оптимальная
+		" limit 10 offset ($1* 10 -10) ", page) //думаю выборка сразу в бд самая оптимальная
 	if err != nil {
 		panic(400)
 		return
@@ -111,6 +147,9 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		SpaceTriming(&l)
+		l.Description = ""
+		buf := l.Image[0] //переменная buf введена, что бы не было коллизии данных в памяти
+		l.Image = []string{buf}
 		list = append(list, l)
 	}
 	defer ad.Close()
