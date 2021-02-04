@@ -109,7 +109,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		SpaceTriming(&l)
 		l.Description = ""
-		buf := l.Image[0] //переменная buf введена, что бы не было коллизии данных в памяти
+		buf := l.Image[0] 
 		l.Image = []string{buf}
 		CopyAdv(&l, &adv)
 		list = append(list, adv)
