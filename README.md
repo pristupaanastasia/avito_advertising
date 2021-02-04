@@ -1,13 +1,19 @@
 # API Avito advertising
 ## Запуск
 # Создание таблицы
+
 sudo docker-compose run db bash
+
 psql --host=db --username=postgres
+
 pass: 1805
+
 \connect avito_db
 
 # Запуск докера
+
 docker-compose build
+
 docker-compose up
 ## Описание методов ##
 
