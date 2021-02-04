@@ -1,6 +1,6 @@
 # API Avito advertising
 ##Запуск
-http://localhost:9000/create?image=https://images.app.goo.gl/yoP6Yc7iPZQsGA858&image=https://images.app.goo.gl/BVk7Nho7LeRDiJcV8&price=23&name=%D1%81%D0%B8%D0%BD%D0%B8%D0%B9&description=%D0%BA%D1%80%D0%B0%D1%81%D0%B8%D0%B2%D1%8B%D0%B9%20%D1%81%D0%B8%D0%BD%D0%B8%D0%B9
+
 ##Описание методов
 ###IndexHandler
 ####Метод получения списка объявлений
