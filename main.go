@@ -64,7 +64,7 @@ func Valid(name string, desc string, image []string, w http.ResponseWriter) bool
 		ErrorHandler(w, erro, 400)
 		return true
 	}
-	if len(name) > 200 {
+	if len(name) > 200 && len(name) == 0 {
 		erro := Erstruct{errors.New("error upload"), 400, "Название не должно быть больше 200 символов"}
 		ErrorHandler(w, erro, 400)
 		return true
@@ -104,7 +104,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		adv := Advertisement_js{}
 		err := ad.Scan(&l.Id, &l.Price, &l.Name, &l.Description, pq.Array(&l.Image), &l.Update)
 		if err != nil {
-			panic(400)
+			ErrorHandler(w, err, 400)
 			continue
 		}
 		SpaceTriming(&l)

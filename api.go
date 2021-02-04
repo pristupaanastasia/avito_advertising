@@ -24,10 +24,10 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 		ErrorHandler(w, err, 400)
 		return
 	}
-	json_return := map[string]int{"id": id, "status": 200}
+	json_return := map[string]int{"id": id, "status": 201} //если возникает ошибка, то не возвращает id
 	json_data, errno := json.Marshal(json_return)
 	if errno != nil {
-		ErrorHandler(w, errno, 400)
+		ErrorHandler(w, errno, 418)
 		return
 	}
 	w.Write(json_data)
