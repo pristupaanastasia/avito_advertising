@@ -1,6 +1,6 @@
 # API Avito advertising
 ## Запуск
-# Создание таблицы
+### Создание таблицы
 
 sudo docker-compose run db bash
 
@@ -10,7 +10,7 @@ pass: 1805
 
 \connect avito_db
 
-# Запуск докера
+### Запуск докера
 
 docker-compose build
 
