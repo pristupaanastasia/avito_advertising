@@ -27,7 +27,7 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 	json_return := map[string]int{"id": id, "status": 201} //если возникает ошибка, то не возвращает id
 	json_data, errno := json.Marshal(json_return)
 	if errno != nil {
-		ErrorHandler(w, errno, 418)
+		ErrorHandler(w, errno, 400)
 		return
 	}
 	w.Write(json_data)
